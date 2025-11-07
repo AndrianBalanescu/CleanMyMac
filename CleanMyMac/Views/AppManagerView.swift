@@ -27,23 +27,51 @@ struct AppManagerView: View {
         HSplitView {
             // App List
             VStack(spacing: 0) {
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    TextField("Search apps...", text: $searchText)
-                        .textFieldStyle(.plain)
+                // Header with Scan Button
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                        TextField("Search apps...", text: $searchText)
+                            .textFieldStyle(.plain)
+                    }
+                    .padding()
+                    .glassBackground()
+                    
+                    if !appManager.isLoading && appManager.installedApps.isEmpty {
+                        VStack(spacing: 8) {
+                            Text("No apps scanned yet")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            Button("Scan Applications") {
+                                Task {
+                                    await appManager.scanInstalledApps()
+                                }
+                            }
+                            .buttonStyle(GlassButton())
+                            Text("This will scan /Applications and ~/Applications folders")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                    }
                 }
-                .padding()
-                .glassBackground()
                 .padding()
                 
                 // App List
                 if appManager.isLoading {
                     Spacer()
-                    ProgressView("Scanning applications...")
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Scanning applications...")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text("This may take a moment")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     Spacer()
-                } else {
+                } else if !appManager.installedApps.isEmpty {
                     ScrollView {
                         LazyVStack(spacing: 8) {
                             ForEach(filteredApps) { app in
@@ -189,12 +217,130 @@ struct AppManagerView: View {
                             .padding()
                         }
                         
-                        if appManager.appCaches.isEmpty && appManager.leftoverFiles.isEmpty {
+                        // Enhanced Metadata Section
+                        if let metadata = selectedApp.metadata {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("App Information")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                if let installDate = metadata.formattedInstallationDate {
+                                    InfoRow(label: "Installed", value: installDate)
+                                }
+                                
+                                if let lastUsed = metadata.formattedLastUsedDate {
+                                    InfoRow(label: "Last Used", value: lastUsed)
+                                    if let days = metadata.daysSinceLastUsed {
+                                        Text("\(days) days ago")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                
+                                if let category = metadata.category {
+                                    InfoRow(label: "Category", value: category.rawValue)
+                                }
+                                
+                                if let developer = metadata.developer {
+                                    InfoRow(label: "Developer", value: developer)
+                                }
+                                
+                                if metadata.isAppStoreApp {
+                                    HStack {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .foregroundColor(.blue)
+                                        Text("App Store App")
+                                            .font(.subheadline)
+                                    }
+                                }
+                                
+                                if !metadata.permissions.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Permissions")
+                                            .font(.headline)
+                                        ForEach(metadata.permissions, id: \.self) { permission in
+                                            Text("• \(permission)")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding()
+                            .glassBackground()
+                        }
+                        
+                        // CLI Tools Section
+                        if !selectedApp.cliTools.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("CLI Tools")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                ForEach(selectedApp.cliTools) { tool in
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(tool.name)
+                                                .font(.headline)
+                                            Text(tool.path)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                            if tool.isSymlink, let target = tool.symlinkTarget {
+                                                Text("→ \(target)")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Text(tool.displaySize)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .glassBackground()
+                                }
+                            }
+                            .padding()
+                        }
+                        
+                        // Keyboard Shortcuts Section
+                        if !selectedApp.keyboardShortcuts.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Keyboard Shortcuts")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                ForEach(selectedApp.keyboardShortcuts) { shortcut in
+                                    HStack {
+                                        Text(shortcut.displayString)
+                                            .font(.system(.body, design: .monospaced))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.gray.opacity(0.2))
+                                            .cornerRadius(4)
+                                        
+                                        Spacer()
+                                        
+                                        Text(shortcut.action)
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .glassBackground()
+                                }
+                            }
+                            .padding()
+                        }
+                        
+                        if appManager.appCaches.isEmpty && appManager.leftoverFiles.isEmpty && selectedApp.metadata == nil && selectedApp.cliTools.isEmpty && selectedApp.keyboardShortcuts.isEmpty {
                             VStack(spacing: 12) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 48))
                                     .foregroundColor(.green)
-                                Text("No caches or leftover files found")
+                                Text("No additional information found")
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                             }
@@ -217,8 +363,8 @@ struct AppManagerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .task {
-            await appManager.scanInstalledApps()
+        .onAppear {
+            // Don't auto-scan - user must click button
         }
         .alert("Uninstall App", isPresented: $showUninstallAlert) {
             Button("Cancel", role: .cancel) { }

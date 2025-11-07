@@ -16,6 +16,9 @@ struct InstalledApp: Identifiable, Codable {
     let path: String
     let size: Int64
     let icon: Data?
+    let metadata: AppMetadata?
+    let cliTools: [CLITool]
+    let keyboardShortcuts: [KeyboardShortcut]
     
     var displaySize: String {
         ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
@@ -32,7 +35,10 @@ struct InstalledApp: Identifiable, Codable {
          version: String,
          path: String,
          size: Int64,
-         icon: Data? = nil) {
+         icon: Data? = nil,
+         metadata: AppMetadata? = nil,
+         cliTools: [CLITool] = [],
+         keyboardShortcuts: [KeyboardShortcut] = []) {
         self.id = id
         self.name = name
         self.bundleIdentifier = bundleIdentifier
@@ -40,6 +46,9 @@ struct InstalledApp: Identifiable, Codable {
         self.path = path
         self.size = size
         self.icon = icon
+        self.metadata = metadata
+        self.cliTools = cliTools
+        self.keyboardShortcuts = keyboardShortcuts
     }
 }
 

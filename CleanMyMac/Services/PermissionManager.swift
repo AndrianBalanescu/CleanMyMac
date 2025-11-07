@@ -13,20 +13,34 @@ class PermissionManager: ObservableObject {
     static let shared = PermissionManager()
     
     @Published var hasFullDiskAccess: Bool = false
+    @Published var hasCheckedPermissions: Bool = false
+    
+    private var lastCheckTime: Date?
+    private let checkInterval: TimeInterval = 5.0 // Only check every 5 seconds max
     
     private init() {
-        checkFullDiskAccess()
+        // Don't check on init - let user request it
     }
     
     func checkFullDiskAccess() {
-        let fileManager = FileManager.default
-        let testPath = "/Library/Application Support"
+        // Prevent rapid repeated checks
+        if let lastCheck = lastCheckTime,
+           Date().timeIntervalSince(lastCheck) < checkInterval {
+            return
+        }
         
-        // Try to access a protected directory
-        let hasAccess = fileManager.isReadableFile(atPath: testPath) ||
-                       fileManager.fileExists(atPath: NSHomeDirectory() + "/Library/Application Support")
+        lastCheckTime = Date()
+        
+        let fileManager = FileManager.default
+        // Use a safer check that doesn't trigger permission dialogs
+        let testPath = NSHomeDirectory() + "/Library/Application Support"
+        
+        // Try to access a protected directory (but don't fail if we can't)
+        let hasAccess = fileManager.fileExists(atPath: testPath) ||
+                       fileManager.isReadableFile(atPath: testPath)
         
         hasFullDiskAccess = hasAccess
+        hasCheckedPermissions = true
     }
     
     func requestFullDiskAccess() {

@@ -22,19 +22,36 @@ struct TrashCleanupView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
-                    Text("\(trashManager.trashItems.count) items • \(trashManager.displayTotalSize)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if trashManager.trashItems.isEmpty && !trashManager.isLoading {
+                        Text("Click 'Scan Trash' to see trash contents")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("\(trashManager.trashItems.count) items • \(trashManager.displayTotalSize)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Spacer()
                 
-                if !trashManager.trashItems.isEmpty {
-                    Button("Empty Trash") {
-                        showEmptyTrashAlert = true
+                HStack(spacing: 12) {
+                    if trashManager.trashItems.isEmpty && !trashManager.isLoading {
+                        Button("Scan Trash") {
+                            Task {
+                                await trashManager.scanTrash()
+                            }
+                        }
+                        .buttonStyle(GlassButton())
                     }
-                    .buttonStyle(GlassButton())
-                    .foregroundColor(.red)
+                    
+                    if !trashManager.trashItems.isEmpty {
+                        Button("Empty Trash") {
+                            showEmptyTrashAlert = true
+                        }
+                        .buttonStyle(GlassButton())
+                        .foregroundColor(.red)
+                    }
                 }
             }
             .padding()
@@ -105,8 +122,8 @@ struct TrashCleanupView: View {
                 }
             }
         }
-        .task {
-            await trashManager.scanTrash()
+        .onAppear {
+            // Don't auto-scan - user must click button
         }
         .alert("Empty Trash", isPresented: $showEmptyTrashAlert) {
             Button("Cancel", role: .cancel) { }

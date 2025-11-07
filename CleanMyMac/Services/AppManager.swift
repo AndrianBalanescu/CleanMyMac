@@ -18,6 +18,9 @@ class AppManager: ObservableObject {
     
     private let fileManager = FileManager.default
     private let fileSystemScanner = FileSystemScanner.shared
+    private let metadataExtractor = MetadataExtractor.shared
+    private let cliDetector = CLIDetector.shared
+    private let shortcutDetector = ShortcutDetector.shared
     
     func scanInstalledApps() async {
         isLoading = true
@@ -73,7 +76,8 @@ class AppManager: ObservableObject {
             iconData = image.tiffRepresentation
         }
         
-        return InstalledApp(
+        // Create basic app info first
+        let basicApp = InstalledApp(
             name: name,
             bundleIdentifier: bundleId,
             version: version,
@@ -81,6 +85,10 @@ class AppManager: ObservableObject {
             size: size,
             icon: iconData
         )
+        
+        // Extract metadata asynchronously (can be done later for performance)
+        // For now, return basic app - metadata will be loaded when selected
+        return basicApp
     }
     
     private func calculateAppSize(at path: String) async -> Int64 {
@@ -117,6 +125,46 @@ class AppManager: ObservableObject {
         
         // Load leftover files
         leftoverFiles = await fileSystemScanner.scanLeftoverFiles(for: app.bundleIdentifier)
+        
+        // Load enhanced metadata if not already loaded
+        if app.metadata == nil {
+            await loadEnhancedMetadata(for: app)
+        }
+    }
+    
+    private func loadEnhancedMetadata(for app: InstalledApp) async {
+        // Extract metadata
+        let metadata = await metadataExtractor.extractMetadata(for: app)
+        
+        // Detect CLI tools
+        let cliTools = await cliDetector.detectCLITools(for: app.bundleIdentifier, appPath: app.path)
+        
+        // Detect keyboard shortcuts
+        let shortcuts = await shortcutDetector.detectShortcuts(for: app.bundleIdentifier)
+        
+        // Update the app with enhanced data
+        let updatedApp = InstalledApp(
+            id: app.id,
+            name: app.name,
+            bundleIdentifier: app.bundleIdentifier,
+            version: app.version,
+            path: app.path,
+            size: app.size,
+            icon: app.icon,
+            metadata: metadata,
+            cliTools: cliTools,
+            keyboardShortcuts: shortcuts
+        )
+        
+        // Update in the list
+        if let index = installedApps.firstIndex(where: { $0.id == app.id }) {
+            installedApps[index] = updatedApp
+        }
+        
+        // Update selected app if it's the same
+        if selectedApp?.id == app.id {
+            selectedApp = updatedApp
+        }
     }
     
     func uninstallApp(_ app: InstalledApp) async throws {

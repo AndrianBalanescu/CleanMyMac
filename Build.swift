@@ -130,9 +130,11 @@ func buildProject() throws -> String? {
         "-destination", "platform=macOS",
         "CODE_SIGN_IDENTITY=",
         "CODE_SIGNING_REQUIRED=NO",
-        "CODE_SIGNING_ALLOWED=NO"
+        "CODE_SIGNING_ALLOWED=NO",
+        "-quiet" // Reduce output, but still show errors
     ]
     
+    printInfo("Running xcodebuild...")
     try runCommand("/usr/bin/xcodebuild", arguments: arguments)
     printInfo("Build successful!")
     
