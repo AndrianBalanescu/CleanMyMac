@@ -1,0 +1,55 @@
+name: CleanMyMac
+options:
+  bundleIdPrefix: com.cleanmymac
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+  xcodeVersion: "14.0"
+  usesTabs: false
+  indentWidth: 4
+  tabWidth: 4
+
+targets:
+  CleanMyMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: CleanMyMac
+        excludes:
+          - "**/*.md"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.cleanmymac.app
+      PRODUCT_NAME: CleanMyMac
+      INFOPLIST_FILE: CleanMyMac/Info.plist
+      SWIFT_VERSION: "5.7"
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      CODE_SIGN_IDENTITY: ""
+      CODE_SIGNING_REQUIRED: NO
+      CODE_SIGNING_ALLOWED: NO
+      DEVELOPMENT_TEAM: ""
+    info:
+      path: CleanMyMac/Info.plist
+      properties:
+        CFBundleName: CleanMyMac
+        CFBundleDisplayName: CleanMyMac
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleVersion: 1
+        CFBundleShortVersionString: 1.0
+        LSMinimumSystemVersion: 13.0
+        NSHumanReadableCopyright: "Copyright © 2024"
+        NSDesktopFolderUsageDescription: "This app needs access to your desktop to manage files."
+        NSDownloadsFolderUsageDescription: "This app needs access to your downloads folder to manage files."
+        NSRemovableVolumesUsageDescription: "This app needs access to removable volumes to manage files."
+        NSFileProviderDomainUsageDescription: "This app needs access to file provider domains to manage files."
+
+schemes:
+  CleanMyMac:
+    build:
+      targets:
+        CleanMyMac: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
