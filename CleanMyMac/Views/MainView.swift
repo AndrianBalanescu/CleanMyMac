@@ -72,7 +72,7 @@ struct MainView: View {
                 case .system:
                     SystemMonitorView()
                 case .processes:
-                    SystemMonitorView() // Reuse for now, could create separate view
+                    ProcessView()
                 case .network:
                     NetworkMonitorView()
                 case .trash:
